@@ -1,0 +1,533 @@
+---
+title: "Viz Template"
+author: "Dr. Chris J. Martin"
+date: "`r format(Sys.time(), '%a %d %B, %Y')`"
+output: html_document 
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+## Set up
+
+```{r, setup}
+knitr::opts_chunk$set(echo = TRUE)
+
+# this is for rendering custom fonts in markdown
+# but it doesn;t appear to be working ...
+
+ragg_png_wrapper = function(..., res = 150) {
+  ragg::agg_png(..., res = res, units = "in")
+}
+
+knitr::opts_chunk$set(dev = ragg_png_wrapper)
+```
+
+```{r}
+library(tidyverse)
+
+library(ggtext)     # improved text rendering for ggplot2
+library(ggforce)    # extra functionality for ggplot2 inc. improved annotation
+library(patchwork)  # composing layouts with multiple plots
+library(ggdist)     # visualising uncertainty and distributions
+library(readxl)     # for reading Excel files
+library(lubridate)  # for dates
+library(readxl)     # for reading excel files
+library(patchwork)  # for composing layouts of multiple plots
+
+# packages for using custom fonts
+library(systemfonts)
+library(textshaping)
+
+library(cjmr)       # my own package including default styling for plots
+
+# set default theme for exploratory plots
+theme_set(theme_light())
+```
+
+## Source of info on common ggplot2 tasks
+
+-   A short and general reference to common tasks at the BBC:
+    <https://bbc.github.io/rcookbook/>
+
+-   ggplot2 wizardry by Cédric Scherer -
+    <https://z3tt.github.io/OutlierConf2021/>
+
+-   R Graphics Cookbook by W. Chang - <https://r-graphics.org/>
+
+-   Custom fonts -
+    <https://yjunechoe.github.io/posts/2021-06-24-setting-up-and-debugging-custom-fonts/>
+
+## Useful code snippets
+
+[Changing the size of a
+legend](https://z3tt.github.io/OutlierConf2021/#legend-design) - Cédric
+Scherer
+
+```{r, eval=FALSE}
+guides(color = guide_colorbar(title.position = "top", 
+                                title.hjust = .5, 
+                                barwidth = unit(20, "lines"), 
+                                barheight = unit(.5, "lines")))
+
+```
+
+[Changing margins](https://z3tt.github.io/OutlierConf2021/#white-space)
+- Cédric Scherer
+
+```{r, eval=FALSE}
+theme(plot.margin = margin(t = 25, r = 25, b = 10, l = 25)) # top, right, bottom, left
+```
+
+Adjusting axis
+
+```{r, eval=FALSE}
+scale_y_continuous(breaks = seq(0,350, 50), # labels
+                   limits = c(0, 350)) # extent of axis
+```
+
+## Colour palettes
+
+## Remember it is an iterative process
+
+## Import data
+
+```{r}
+raw_data <- haven::read_dta("migrazensus_v0.1.dta")
+```
+
+## Clean data
+
+Identifiers
+
+• wknr_2021: Official ID number for electoral district
+
+• wkname_2021: Name of electoral district
+
+• land: Name of federal state
+
+• landid: Official numeric ID for federal state
+
+Estimates obtained from micro census
+
+• bevoelkerung: Estimated population size for a district
+
+• wahlberechtigte: Estimated number of eligible voters
+
+• wbmighintergrund_absolut: Number of eligible citizen with migrant
+background
+
+• wbmighintergrund_anteil: Share of eligible citizens with migrant
+background among all eligible voters
+
+• mighintergrund_absolut: Number of residents with migrant background
+
+• mighintergrund_anteil: Share of residents with migrant background
+among all residents (population)
+
+2017 results within 2021 boundaries
+
+1
+
+• wahlberechtigte_2017: Number of eligible voters
+
+• waehler: Number of voters
+
+• gueltige_1: Number of valid votes (Erststimme, i.e., vote for a
+district candidate)
+
+• gueltige_2: Number of valid votes (Zweitstimme, i.e., vote for a
+district candidate)
+
+• cdu_1: Number of votes for CDU (Erststimme)
+
+• cdu_2: Number of votes for CDU (Zweitstimme)
+
+• spd_1: Number of votes for SPD (Erststimme)
+
+• spd_2: Number of votes for SPD (Zweitstimme)
+
+• linke_1: Number of votes for Die Linke (Erststimme)
+
+• linke_2: Number of votes for Die Linke (Zweitstimme)
+
+• gruene_1: Number of votes for Bündnis 90/Die Grünen(Erststimme)
+
+• gruene_2: Number of votes for Bündnis 90/Die Grünen(Zweitstimme)
+
+• csu_1: Number of votes for CSU (Erststimme)
+
+• csu_2: Number of votes for CSU (Zweitstimme)
+
+• fdp_1: Number of votes for FDP (Erststimme)
+
+• fdp_2: Number of votes for FDP (Zweitstimme)
+
+• afd_1: Number of votes for AfD (Erststimme)
+
+• afd_2: Number of votes for AfD (Zweitstimme)
+
+Note: Turnout can be calculated as waehler / wahlberechtigte_2017 and
+vote shares as, for instance,
+
+cdu_1 / gueltige_1 oder spd_2 / gueltige_2.
+
+```{r}
+raw_data %>% 
+  visdat::vis_miss()
+
+clean_data <- raw_data %>% 
+  select(district_id = wknr_2021,
+         district_nm = wkname_2021,
+         mg_bg = mighintergrund_absolut, 
+         elig_voters_all_1 = wahlberechtigte, 
+         elig_voters_all_2 = waehler,
+         elig_voters_mg_bg = wbmighintergrund_absolut,
+         perc_elig_voters_mg_bg = wbmighintergrund_anteil,
+         ends_with("1"),
+         ends_with("2"))
+
+clean_data %>% 
+  View()
+```
+
+## Explore the data
+
+1.  Show that eligible citizens with migration background matter for who
+    wins the constituency ("Erststimme") -\> e.g., my table above, your
+    ideas?
+
+```{r}
+# code from Arndt Leininger 
+winner_runner_up <- raw_data %>% 
+  select(wknr_2021, contains('_1'), -gueltige_1, -alq_15_24) %>% 
+    pivot_longer(cols = cdu_1:afd_1, names_to = 'party', values_to = 'votes') %>% 
+    group_by(wknr_2021) %>% 
+    arrange(wknr_2021, desc(votes)) %>% 
+    slice(1:2) %>% 
+    summarize(first_placed = first(party),
+              first_placed_votes = first(votes),
+              second_placed = nth(party, 2),
+              second_placed_votes = nth(votes, 2),
+              margin = first_placed_votes - second_placed_votes)
+
+raw_data <- left_join(raw_data, winner_runner_up, by = 'wknr_2021')
+
+swing_districts <- raw_data %>% 
+  arrange(margin) %>% 
+  mutate(turnout = waehler / wahlberechtigte_2017) %>% 
+  select(state = land,
+         state_id = landid,
+         district_id = wknr_2021,
+         district_nm = wkname_2021,
+         first_placed, first_placed_votes, 
+         second_placed, second_placed_votes,
+         margin,
+         elig_voters_mg_bg = wbmighintergrund_absolut,
+         turnout) %>% 
+  mutate(non_voting_mg_bg = elig_voters_mg_bg * (1 - turnout),
+         potential_to_swing_election = non_voting_mg_bg > margin)
+
+swing_districts
+```
+
+## Explore the context of the data
+
+-   **Who collected the data?**
+
+-   **Why was the data collected?**
+
+-   **What is the data used for?**
+
+-   **Are there some other datasets that might be useful for
+    comparisons?**
+
+## Think about the audience
+
++----------------------------------------------------------------+-----+
+| To think about                                                 | No  |
+|                                                                | tes |
++================================================================+=====+
+| Can you think of a group of people who might view the          |     |
+| visualisations?                                                |     |
++----------------------------------------------------------------+-----+
+| Can you think of a specific person who might view the          |     |
+| visualizations?                                                |     |
++----------------------------------------------------------------+-----+
+| What do want the audience to know or be able to after viewing  |     |
+| the visualizations?                                            |     |
++----------------------------------------------------------------+-----+
+| What expectations might the audience have about visualisations |     |
+| of this data?                                                  |     |
++----------------------------------------------------------------+-----+
+
+## Ask some questions to be answered by the visualizations
+
+1.  
+
+2.  Show that eligible citizens with migration background matter for the
+    party vote (seats are allocated at the Laender level) -\> your
+    ideas?
+
+3.  Show that non-enfranchised residents with migration background
+    (underage citizens with migration background and alien residents)
+    could matter, too, if naturalized or enfranchised. -\> e.g., my
+    parliament plot, your ideas?
+
+## Summarize the story that the visualizations can help tell
+
+Based on the questions above, the story might go something like this:
+
+-   ...
+
+-   ...
+
+## Create the visualisation/s
+
+### Visualization 1 (question n)
+
++---------------------+-----------------+---------------------+
+| Question            | Answer (i.e.    | Notes to consider   |
+|                     | title)          | in design, chart    |
+|                     |                 | types etc.          |
++=====================+=================+=====================+
+| 1.(a) How many      |                 |                     |
+| people with migrant |                 |                     |
+| backgrounds are     |                 |                     |
+| there living in     |                 |                     |
+| Germany?            |                 |                     |
++---------------------+-----------------+---------------------+
+| 1.(b) What          |                 |                     |
+| proportion of       |                 |                     |
+| people with a       |                 |                     |
+| migrant background  |                 |                     |
+| are eligible to     |                 |                     |
+| vote?               |                 |                     |
++---------------------+-----------------+---------------------+
+| 1.  (c) How many    |                 |                     |
+|     seats is this   |                 |                     |
+|     equivalent to?  |                 |                     |
++---------------------+-----------------+---------------------+
+| 1.(d) Where do      |                 |                     |
+| people with a       |                 |                     |
+| migrant background  |                 |                     |
+| who are eligible to |                 |                     |
+| vote live?          |                 |                     |
++---------------------+-----------------+---------------------+
+
+```{r}
+q1_plotting_df <- raw_data %>% 
+  select(district_id = wknr_2021,
+         district_nm = wkname_2021,
+         state_nm = land,
+         state_id = landid,
+         mg_bg = mighintergrund_absolut, 
+         elig_voters_all_1 = wahlberechtigte, 
+         elig_voters_all_2 = waehler,
+         elig_voters_mg_bg = wbmighintergrund_absolut) %>% 
+  mutate(across(where(is.numeric), round)) %>% 
+  group_by(state_nm) %>% 
+  summarise(mg_bg = sum(mg_bg),
+            elig_voters_mg_bg = sum(elig_voters_mg_bg)
+            ) %>% 
+  mutate(prop_eligible = elig_voters_mg_bg / mg_bg,
+         prop_inelgible = 1 - prop_eligible)
+
+
+  
+q1a_df <- q1_plotting_df %>% 
+  mutate(highlight = mg_bg > 1e+06)
+
+total_mg_bg <- sum(q1a_df$mg_bg)
+
+mg_bg_highlighted_states <- q1a_df %>% 
+  filter(highlight) %>% 
+  summarise(sum(mg_bg)) %>% 
+  pull()
+
+prop_mg_bg_in_hl_states <- mg_bg_highlighted_states / total_mg_bg
+
+annotation <- glue::glue("Approximately {round(total_mg_bg / 1e+06, 1)} million",
+                         " people",
+                         "\nwith a migrant background live in Germany.\n",
+                         "{round(prop_mg_bg_in_hl_states * 100)}% of these people",
+                         " live in the six highlighted states")
+
+q1a <- q1a_df %>% 
+  ggplot(aes(mg_bg / 1e+06, 
+             fct_reorder(state_nm, mg_bg),
+             fill = highlight)) +
+  geom_col() +
+  annotate("text",
+           x = 3, y = "Bremen",
+           label = annotation, family = "Lato") +
+  labs(x = "Millions of people with a migrant background") +
+  
+  theme_cjmr_explanatory() +
+  theme(panel.grid.major.y = element_blank(),
+        panel.grid.major.x = element_line(),
+        legend.position = "none")
+
+q1a
+
+ggsave("q1a.svg", plot = q1a, units = "mm",
+       width = 140, height = 90)
+  
+```
+
+```{r}
+q1b_df <- q1a_df %>% 
+  select(state_nm, prop_eligible, prop_inelgible, mg_bg) %>% 
+  pivot_longer(c(prop_eligible, prop_inelgible), 
+               names_to = "prop", values_to = "num")
+
+
+q1b <- q1b_df %>% 
+  filter(prop == "prop_eligible") %>% 
+  mutate(highlight = num > 0.4) %>% 
+  ggplot(aes(num, fct_reorder(state_nm, mg_bg), 
+             fill = highlight)) +
+  geom_vline(xintercept = 0.4) +
+  geom_col() +
+  scale_x_continuous(labels = scales::percent_format(accuracy = 1)) +
+  
+  theme_cjmr_explanatory() +
+    theme(panel.grid.major.y = element_blank(),
+          panel.grid.major.x = element_line(),
+        legend.position = "none") +
+  
+  labs(x = "Percentage of people with a migrant background who are eligible to vote")
+
+q1b
+
+ggsave("q1b.svg", plot = q1b, units = "mm",
+       width = 96.7, height = 90)
+
+```
+
+xdf
+
+```{r}
+raw_data %>% 
+  select(district_id = wknr_2021,
+         district_nm = wkname_2021,
+         state_nm = land,
+         state_id = landid,
+         mg_bg = mighintergrund_absolut, 
+         elig_voters_all_1 = wahlberechtigte, 
+         elig_voters_all_2 = waehler,
+         elig_voters_mg_bg = wbmighintergrund_absolut) %>% 
+  summarise(total_voters = sum(elig_voters_all_1),
+            total_mg_bg = sum(elig_voters_mg_bg)) %>% 
+  mutate()
+
+ 
+
+votes_per_seat <- sum(raw_data$waehler) / 598
+seats_for_mg_bg_votes <- round(sum(raw_data$wbmighintergrund_absolut) /
+                                 votes_per_seat)
+seats_for_non_mg_bg_votes <- 598 - seats_for_mg_bg_votes
+
+seats <- tribble(
+  ~"bg", ~"seats",
+  "mg", seats_for_mg_bg_votes,
+  "non_mg", seats_for_non_mg_bg_votes
+)
+
+library(waffle)
+
+q1c <- ggplot(seats,
+       aes(values = seats, fill = bg)) +
+  geom_waffle(colour = "white") + #, flip = TRUE
+  coord_equal() +
+  theme_void() +
+  theme_enhance_waffle() +
+  theme(legend.position = "none")
+
+q1c
+
+ggsave("q1c.svg", plot = q1c, units = "mm",
+       width = 256.7, height = 30)
+```
+
+### Visualization x (question n)
+
++-----------+-----------------+----------------------------------------+
+| Question  | Answer (i.e.    | Notes to consider in design, chart     |
+|           | title)          | types etc.                             |
++===========+=================+========================================+
+|           |                 |                                        |
++-----------+-----------------+----------------------------------------+
+
+```{r}
+
+```
+
+### Visualization x (question n)
+
++-----------+-----------------+----------------------------------------+
+| Question  | Answer (i.e.    | Notes to consider in design, chart     |
+|           | title)          | types etc.                             |
++===========+=================+========================================+
+|           |                 |                                        |
++-----------+-----------------+----------------------------------------+
+
+```{r}
+
+```
+
+## Export the visualizations for editing
+
+Some useful image sizes (mm unless stated)
+
++---------------------------------------------------+--------+---------+
+| Purpose                                           | Width  | Height  |
++===================================================+========+=========+
+| Single plot for Twitter                           |        |         |
++---------------------------------------------------+--------+---------+
+|                                                   |        |         |
++---------------------------------------------------+--------+---------+
+|                                                   |        |         |
++---------------------------------------------------+--------+---------+
+
+```{r}
+
+file_folder <- ""
+file_name <- "holding_name"
+
+ggsave(str_c(file_folder, file_name, ".svg"))
+
+# if saving as a pdf use device = cairo_pdf in ggsave 
+```
+
+## Import back in the vizualisation as an image
+
+## Consider how well the overall design works
+
+Based on [Flowing
+Data](https://flowingdata.com/visualization-for-clarity/designing-for-an-audience/adjusting-for-the-differences/).
+
+Think about each issue (in bold below) as a continuum rather than a
+check-box.
+
++-----------------------------+---------------------------------+-----+
+| Question to consider        | Tips                            | No  |
+|                             |                                 | tes |
++=============================+=================================+=====+
+| Are the **encodings**       | Air on the side of too much     |     |
+| explained?                  | explanation ...                 |     |
++-----------------------------+---------------------------------+-----+
+| Is the **context**          | Titles, subtitles               |     |
+| explained?                  |                                 |     |
+|                             | Annotate                        |     |
+|                             |                                 |     |
+|                             | Use colour to highlight         |     |
++-----------------------------+---------------------------------+-----+
+| Does it have                | Think visual hierarchy *(as     |     |
+| **readability** like text?  | when laying out text)*          |     |
++-----------------------------+---------------------------------+-----+
+| Do the **aesthetics** align | Serious topic -\> dark colours, |     |
+| with the topic/message?     | straight-forward chart types    |     |
++-----------------------------+---------------------------------+-----+
+
+## Remember it is an iterative process
