@@ -520,7 +520,7 @@ q2_df <- swing_districts %>%
   filter(!is.na(pot_to_swing_2))
   
  
-q2_df %>% 
+q2_plot_df <- q2_df %>% 
   mutate(plus_2500 = !is.na(pot_to_swing_2),
          plus_1000 = (pot_to_swing_2 == "+1000" | pot_to_swing_2 == "outright"),
          outright = (pot_to_swing_2 == "outright")) %>% 
@@ -530,38 +530,76 @@ q2_df %>%
             plus_2500 = sum(plus_2500)) %>% 
   filter(outright > 0) %>% 
   
-  st_drop_geometry() %>% 
-  ggplot(aes(outright, fct_reorder(second_placed, outright),
+  st_drop_geometry()
+
+ggplot(q2_plot_df, aes(outright, fct_reorder(second_placed, outright),
              fill = second_placed)) +
   geom_col() +
   scale_y_discrete(labels = c(cdu_1 = "CDU", spd_1 = "SPD", 
                               linke_1 = "Linke", gruene_1 = "Gruene")) +
+  scale_x_continuous(breaks = seq(0,30,5)) +
   scale_fill_manual(values = c(cdu_1 = "#666666", spd_1 = "#C20A1B", 
                               linke_1 = "#C20A83", gruene_1 = "#64C30A")) +
   
-  labs(x = "Number of district seats that could be won by gaining the votes of
-       people with a migrant vote who didn't vote at the last election") +
+  labs(x = "Number of district seats that could be won by gained") +
   
   theme_cjmr_explanatory() +
   theme(legend.position = "none",
         panel.grid.major.y = element_blank(),
         panel.grid.major.x = element_line())
-  
-  
-  ggplot() +
-  geom_sf(mapping = aes(alpha = fct_rev(pot_to_swing_2)), fill = "blue") +
-  facet_wrap(~ second_placed)
-  
 
-  group_by(second_placed) %>% 
-  nest()
-
-  # focus on the two main parties (cdu_1 and sdp_1)
-  filter(second_placed == "cdu_1" | second_placed == "sdp_1" )
+ggsave("q2_plot.svg", plot = q2_plot, units = "mm",
+       width = 124.3, height = 60)  
+  
+  # ggplot() +
+  # geom_sf(mapping = aes(alpha = fct_rev(pot_to_swing_2)), fill = "blue") +
+  # facet_wrap(~ second_placed)
+  # 
+  # 
+  # group_by(second_placed) %>% 
+  # nest()
+  # 
+  # # focus on the two main parties (cdu_1 and sdp_1)
+  # filter(second_placed == "cdu_1" | second_placed == "sdp_1" )
   
   #  
   # 
   # ggplot() + geom_sf()
+```
+
+```{r}
+q2_b <- q2_plot_df %>% 
+  ggplot(aes(x = 0, y = outright,
+             colour = second_placed,
+             size = outright)) +
+  geom_point() +
+  scale_size_area(max_size = 10) +
+  scale_x_continuous(breaks = c(0), expand = c(0,0)) +
+  theme_cjmr_explanatory() +
+  theme(legend.position = "none")
+  
+
+q2_b
+
+ggsave("q2_b_plot.svg", plot = q2_b, units = "mm",
+       width = 124.3, height = 110.5)  
+```
+
+```{r}
+swing_districts_simp <- swing_districts %>% 
+  select(district_id, second_placed, potential_to_swing_election) %>% 
+  mutate(district_id = as.numeric(district_id))
+
+q2b_df <- districts_geometry %>% 
+  left_join(swing_districts_simp) %>% 
+  mutate(second_place_could_win = if_else(potential_to_swing_election, 
+                                          second_placed, "none"),
+         second_place_could_win = na_if(second_place_could_win, "none"))
+
+ggplot(q2b_df) +
+  geom_sf(mapping = aes(fill = second_place_could_win))
+
+st_write(q2b_df, "winnable.shp")
 ```
 
 ### Visualization x (question n)
