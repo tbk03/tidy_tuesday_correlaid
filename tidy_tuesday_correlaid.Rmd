@@ -450,17 +450,118 @@ ggsave("q1c.svg", plot = q1c, units = "mm",
        width = 256.7, height = 30)
 ```
 
-### Visualization x (question n)
+Working out the majority
 
-+-----------+-----------------+----------------------------------------+
-| Question  | Answer (i.e.    | Notes to consider in design, chart     |
-|           | title)          | types etc.                             |
-+===========+=================+========================================+
-|           |                 |                                        |
-+-----------+-----------------+----------------------------------------+
+Coalition partners seats -
+(<https://en.wikipedia.org/wiki/List_of_political_parties_in_Germany>)
+
+-   CDU/CSU - 245
+
+-   SDP - 152
+
+-   total = 397
+
+-   Number of seats total - 709
+    (<https://en.wikipedia.org/wiki/Bundestag>)
+
+-   Other - 312
+
+-   Majority - 397-312 = 85
+
+-   
+
+### Visualization 2 (question 2)
+
++-------------------------+-----------------+-------------------------+
+| Question                | Answer (i.e.    | Notes to consider in    |
+|                         | title)          | design, chart types     |
+|                         |                 | etc.                    |
++=========================+=================+=========================+
+| Where can voters with   |                 |                         |
+| migration backgrounds   |                 |                         |
+| swing elections of      |                 |                         |
+| district                |                 |                         |
+| representative?         |                 |                         |
++-------------------------+-----------------+-------------------------+
 
 ```{r}
+library(sf)
 
+districts_geometry <- read_sf("btw21_geometrie_wahlkreise_shp/Geometrie_Wahlkreise_20DBT.shp") %>% 
+  janitor::clean_names() %>% 
+  rename(district_id = wkr_nr)
+  
+
+q2_df <- swing_districts %>% 
+  
+  # add geometry
+  mutate(district_id = as.numeric(district_id)) %>% 
+  left_join(districts_geometry) %>% 
+  
+  # identify districts where migration background votes could swing election
+  mutate(pot_to_swing_2 = case_when(
+    non_voting_mg_bg > margin ~ "outright",
+    non_voting_mg_bg + 1000 > margin ~ "+1000",
+    non_voting_mg_bg + 2500 > margin ~ "+2500",
+    TRUE ~ "no"),
+    pot_to_swing_2 = na_if(pot_to_swing_2, "no"),
+    pot_to_swing_2 = factor(pot_to_swing_2,
+                            levels = c("outright", "+1000", "+2500"))
+  
+  ) %>% 
+  
+  # convert to sf object for plotting
+  st_as_sf() %>%
+  
+  # focus down on useful variables
+  select(second_placed, pot_to_swing_2, district_id, district_nm) %>% 
+  
+  # remove nas 
+  filter(!is.na(pot_to_swing_2))
+  
+ 
+q2_df %>% 
+  mutate(plus_2500 = !is.na(pot_to_swing_2),
+         plus_1000 = (pot_to_swing_2 == "+1000" | pot_to_swing_2 == "outright"),
+         outright = (pot_to_swing_2 == "outright")) %>% 
+  group_by(second_placed) %>% 
+  summarise(outright = sum(outright),
+            plus_1000 = sum(plus_1000),
+            plus_2500 = sum(plus_2500)) %>% 
+  filter(outright > 0) %>% 
+  
+  st_drop_geometry() %>% 
+  ggplot(aes(outright, fct_reorder(second_placed, outright),
+             fill = second_placed)) +
+  geom_col() +
+  scale_y_discrete(labels = c(cdu_1 = "CDU", spd_1 = "SPD", 
+                              linke_1 = "Linke", gruene_1 = "Gruene")) +
+  scale_fill_manual(values = c(cdu_1 = "#666666", spd_1 = "#C20A1B", 
+                              linke_1 = "#C20A83", gruene_1 = "#64C30A")) +
+  
+  labs(x = "Number of district seats that could be won by gaining the votes of
+       people with a migrant vote who didn't vote at the last election") +
+  
+  theme_cjmr_explanatory() +
+  theme(legend.position = "none",
+        panel.grid.major.y = element_blank(),
+        panel.grid.major.x = element_line())
+  
+  
+  ggplot() +
+  geom_sf(mapping = aes(alpha = fct_rev(pot_to_swing_2)), fill = "blue") +
+  facet_wrap(~ second_placed)
+  
+
+  group_by(second_placed) %>% 
+  nest()
+
+  # focus on the two main parties (cdu_1 and sdp_1)
+  filter(second_placed == "cdu_1" | second_placed == "sdp_1" )
+  
+  #  
+  # 
+  # ggplot() + geom_sf()
 ```
 
 ### Visualization x (question n)
