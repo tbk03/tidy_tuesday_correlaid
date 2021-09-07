@@ -244,22 +244,12 @@ swing_districts
 
 ## Think about the audience
 
-+----------------------------------------------------------------+-----+
-| To think about                                                 | No  |
-|                                                                | tes |
-+================================================================+=====+
-| Can you think of a group of people who might view the          |     |
-| visualisations?                                                |     |
-+----------------------------------------------------------------+-----+
-| Can you think of a specific person who might view the          |     |
-| visualizations?                                                |     |
-+----------------------------------------------------------------+-----+
-| What do want the audience to know or be able to after viewing  |     |
-| the visualizations?                                            |     |
-+----------------------------------------------------------------+-----+
-| What expectations might the audience have about visualisations |     |
-| of this data?                                                  |     |
-+----------------------------------------------------------------+-----+
+| To think about                                                                    | No tes |
+|-----------------------------------------------------------------------------------|--------|
+| Can you think of a group of people who might view the visualisations?             |        |
+| Can you think of a specific person who might view the visualizations?             |        |
+| What do want the audience to know or be able to after viewing the visualizations? |        |
+| What expectations might the audience have about visualisations of this data?      |        |
 
 ## Ask some questions to be answered by the visualizations
 
@@ -286,34 +276,37 @@ Based on the questions above, the story might go something like this:
 
 ### Visualization 1 (question n)
 
-+---------------------+-----------------+---------------------+
-| Question            | Answer (i.e.    | Notes to consider   |
-|                     | title)          | in design, chart    |
-|                     |                 | types etc.          |
-+=====================+=================+=====================+
-| 1.(a) How many      |                 |                     |
-| people with migrant |                 |                     |
-| backgrounds are     |                 |                     |
-| there living in     |                 |                     |
-| Germany?            |                 |                     |
-+---------------------+-----------------+---------------------+
-| 1.(b) What          |                 |                     |
-| proportion of       |                 |                     |
-| people with a       |                 |                     |
-| migrant background  |                 |                     |
-| are eligible to     |                 |                     |
-| vote?               |                 |                     |
-+---------------------+-----------------+---------------------+
-| 1.  (c) How many    |                 |                     |
-|     seats is this   |                 |                     |
-|     equivalent to?  |                 |                     |
-+---------------------+-----------------+---------------------+
-| 1.(d) Where do      |                 |                     |
-| people with a       |                 |                     |
-| migrant background  |                 |                     |
-| who are eligible to |                 |                     |
-| vote live?          |                 |                     |
-+---------------------+-----------------+---------------------+
++----------------------+---------------------+----------------------+
+| Question             | Answer (i.e. title) | Notes to consider in |
+|                      |                     | design, chart types  |
+|                      |                     | etc.                 |
++======================+=====================+======================+
+| 1.(a) How many       |                     |                      |
+| people with migrant  |                     |                      |
+| backgrounds are      |                     |                      |
+| there living in      |                     |                      |
+| Germany?             |                     |                      |
++----------------------+---------------------+----------------------+
+| 1.(b) What           |                     |                      |
+| proportion of people |                     |                      |
+| with a migrant       |                     |                      |
+| background are       |                     |                      |
+| eligible to vote?    |                     |                      |
++----------------------+---------------------+----------------------+
+| 1.                   |                     |                      |
+|                      |                     |                      |
+|     (c) How many     |                     |                      |
+|         seats is     |                     |                      |
+|         this         |                     |                      |
+|         equivalent   |                     |                      |
+|         to?          |                     |                      |
++----------------------+---------------------+----------------------+
+| 1.(d) Where do       |                     |                      |
+| people with a        |                     |                      |
+| migrant background   |                     |                      |
+| who are eligible to  |                     |                      |
+| vote live?           |                     |                      |
++----------------------+---------------------+----------------------+
 
 ```{r}
 q1_plotting_df <- raw_data %>% 
@@ -472,17 +465,9 @@ Coalition partners seats -
 
 ### Visualization 2 (question 2)
 
-+-------------------------+-----------------+-------------------------+
-| Question                | Answer (i.e.    | Notes to consider in    |
-|                         | title)          | design, chart types     |
-|                         |                 | etc.                    |
-+=========================+=================+=========================+
-| Where can voters with   |                 |                         |
-| migration backgrounds   |                 |                         |
-| swing elections of      |                 |                         |
-| district                |                 |                         |
-| representative?         |                 |                         |
-+-------------------------+-----------------+-------------------------+
+| Question                                                                                | Answer (i.e. title) | Notes to consider in design, chart types etc. |
+|-----------------------------------------------------------------------------------------|---------------------|-----------------------------------------------|
+| Where can voters with migration backgrounds swing elections of district representative? |                     |                                               |
 
 ```{r}
 library(sf)
@@ -604,12 +589,9 @@ st_write(q2b_df, "winnable.shp")
 
 ### Visualization x (question n)
 
-+-----------+-----------------+----------------------------------------+
-| Question  | Answer (i.e.    | Notes to consider in design, chart     |
-|           | title)          | types etc.                             |
-+===========+=================+========================================+
-|           |                 |                                        |
-+-----------+-----------------+----------------------------------------+
+| Question | Answer (i.e. title) | Notes to consider in design, chart types etc. |
+|----------|---------------------|-----------------------------------------------|
+|          |                     |                                               |
 
 ```{r}
 
@@ -619,15 +601,11 @@ st_write(q2b_df, "winnable.shp")
 
 Some useful image sizes (mm unless stated)
 
-+---------------------------------------------------+--------+---------+
-| Purpose                                           | Width  | Height  |
-+===================================================+========+=========+
-| Single plot for Twitter                           |        |         |
-+---------------------------------------------------+--------+---------+
-|                                                   |        |         |
-+---------------------------------------------------+--------+---------+
-|                                                   |        |         |
-+---------------------------------------------------+--------+---------+
+| Purpose                 | Width | Height |
+|-------------------------|-------|--------|
+| Single plot for Twitter |       |        |
+|                         |       |        |
+|                         |       |        |
 
 ```{r}
 
@@ -649,24 +627,24 @@ Data](https://flowingdata.com/visualization-for-clarity/designing-for-an-audienc
 Think about each issue (in bold below) as a continuum rather than a
 check-box.
 
-+-----------------------------+---------------------------------+-----+
-| Question to consider        | Tips                            | No  |
-|                             |                                 | tes |
-+=============================+=================================+=====+
-| Are the **encodings**       | Air on the side of too much     |     |
-| explained?                  | explanation ...                 |     |
-+-----------------------------+---------------------------------+-----+
-| Is the **context**          | Titles, subtitles               |     |
-| explained?                  |                                 |     |
-|                             | Annotate                        |     |
-|                             |                                 |     |
-|                             | Use colour to highlight         |     |
-+-----------------------------+---------------------------------+-----+
-| Does it have                | Think visual hierarchy *(as     |     |
-| **readability** like text?  | when laying out text)*          |     |
-+-----------------------------+---------------------------------+-----+
-| Do the **aesthetics** align | Serious topic -\> dark colours, |     |
-| with the topic/message?     | straight-forward chart types    |     |
-+-----------------------------+---------------------------------+-----+
++-----------------------------+-----------------------------+--------+
+| Question to consider        | Tips                        | No tes |
++=============================+=============================+========+
+| Are the **encodings**       | Air on the side of too much |        |
+| explained?                  | explanation ...             |        |
++-----------------------------+-----------------------------+--------+
+| Is the **context**          | Titles, subtitles           |        |
+| explained?                  |                             |        |
+|                             | Annotate                    |        |
+|                             |                             |        |
+|                             | Use colour to highlight     |        |
++-----------------------------+-----------------------------+--------+
+| Does it have                | Think visual hierarchy *(as |        |
+| **readability** like text?  | when laying out text)*      |        |
++-----------------------------+-----------------------------+--------+
+| Do the **aesthetics** align | Serious topic -\> dark      |        |
+| with the topic/message?     | colours, straight-forward   |        |
+|                             | chart types                 |        |
++-----------------------------+-----------------------------+--------+
 
 ## Remember it is an iterative process
